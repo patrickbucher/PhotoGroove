@@ -15,22 +15,21 @@ type ThumbnailSize
  | Medium
  | Large
 
-selectPhoto : { description : String, data : String }
-selectPhoto = { description = "ClickedPhoto", data = "1.jpeg" }
-
-type alias Msg =
-    { description : String, data : String }
+type Msg
+    = ClickedPhoto String
+    | ClickedSize ThumbnailSize
+    | ClickedSurpriseMe
 
 view : Model -> Html Msg
 view model =
     div [ class "content" ]
     [ h1 [] [ text "Photo Groove" ]
     , button
-        [ onClick { description = "ClickedSurpriseMe", data = "" } ]
+        [ onClick ClickedSurpriseMe ]
         [ text "Surprise Me!" ]
     , h3 [] [ text "Thumbnail Size:" ]
     , div [ id "choose-size" ]
-        (List.map viewSizeChooser [ Small, Medium, Large ])
+        (List.map (viewSizeChooser model.chosenSize) [ Small, Medium, Large ])
     , div [ id "thumbnails", class (sizeToString model.chosenSize) ]
         (List.map (viewThumbnail model.selectedUrl) model.photos)
     , img
@@ -40,10 +39,16 @@ view model =
         []
     ]
 
-viewSizeChooser : ThumbnailSize -> Html Msg
-viewSizeChooser size =
+viewSizeChooser : ThumbnailSize -> ThumbnailSize -> Html Msg
+viewSizeChooser selectedSize size =
     label []
-        [ input [ type_ "radio", name "size" ] []
+        [ input
+            [ type_ "radio"
+            , name "size"
+            , onClick (ClickedSize size)
+            , checked (selectedSize == size)
+            ]
+            []
         , text (sizeToString size)
         ]
 
@@ -70,7 +75,7 @@ viewThumbnail selectedUrl thumb =
     img
         [ src (urlPrefix ++ thumb.url)
         , classList [ ( "selected", selectedUrl == thumb.url ) ]
-        , onClick { description = "ClickedPhoto", data = thumb.url }
+        , onClick (ClickedPhoto thumb.url)
         ]
         []
 
@@ -101,13 +106,13 @@ photoArray =
 
 update : Msg -> Model -> Model
 update msg model =
-    case msg.description of
-        "ClickedPhoto" ->
-            { model | selectedUrl = msg.data }
-        "ClickedSurpriseMe" ->
+    case msg of
+        ClickedPhoto url ->
+            { model | selectedUrl = url }
+        ClickedSurpriseMe ->
             { model | selectedUrl = "2.jpeg" }
-        _ ->
-            model
+        ClickedSize size ->
+            { model | chosenSize = size }
 
 main =
     Browser.sandbox
